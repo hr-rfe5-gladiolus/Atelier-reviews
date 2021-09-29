@@ -24,22 +24,22 @@ CREATE TABLE reviews (
   helpfulness int
 );
 
-CREATE TABLE characteristic_reviews (
-  id SERIAL NOT NULL UNIQUE PRIMARY KEY,
-  characteristic_id INT NOT NULL,
-  review_id INT NOT NULL,
-  value INT NOT NULL
-);
-
 CREATE TABLE characteristics (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
   product_id INT NOT NULL,
   name varchar(20)
 );
 
+CREATE TABLE characteristic_reviews (
+  id SERIAL NOT NULL UNIQUE PRIMARY KEY,
+  characteristic_id INT NOT NULL REFERENCES characteristics (id),
+  review_id INT NOT NULL REFERENCES reviews (id),
+  value INT NOT NULL
+);
+
 CREATE TABLE reviews_photos (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
-  review_id INT NOT NULL,
+  review_id INT NOT NULL REFERENCES reviews (id),
   url varchar(2048) NOT NULL
 );
 
@@ -48,14 +48,13 @@ FROM '/home/chris/hackreactor/SDC-reviews/reviews.csv'
 DELIMITER ','
 CSV HEADER;
 
-COPY characteristic_reviews(id, characteristic_id, review_id, value)
-FROM '/home/chris/hackreactor/SDC-reviews/characteristic_reviews.csv'
+COPY characteristics(id, product_id, name)
+FROM '/home/chris/hackreactor/SDC-reviews/characteristics.csv'
 DELIMITER ','
 CSV HEADER;
 
-
-COPY characteristics(id, product_id, name)
-FROM '/home/chris/hackreactor/SDC-reviews/characteristics.csv'
+COPY characteristic_reviews(id, characteristic_id, review_id, value)
+FROM '/home/chris/hackreactor/SDC-reviews/characteristic_reviews.csv'
 DELIMITER ','
 CSV HEADER;
 
