@@ -62,3 +62,6 @@ COPY reviews_photos(id, review_id, url)
 FROM '/home/chris/hackreactor/SDC-reviews/reviews_photos.csv'
 DELIMITER ','
 CSV HEADER;
+
+
+setval('reviews_id_seq', (SELECT MAX(id) FROM reviews)+1);
