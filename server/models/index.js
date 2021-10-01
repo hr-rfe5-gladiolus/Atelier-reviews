@@ -1,7 +1,8 @@
-db = require("../database/index.js");
+var db = require("../database/index.js");
+var format = require('pg-format');
 
 module.exports = {
-  getReviews: (params, callback) => {
+  getReviews: (params) => {
     var product_id = params.product_id;
     var count = params.count || 5;
     var sort = params.sort || 'helpful';
@@ -15,7 +16,6 @@ module.exports = {
     var page = params.page || 1;
     var offset = (page - 1) * count;
     var fields = [product_id, sort, count, offset]
-    console.log(fields);
     // var queryString = "SELECT *, ARRAY(json_build_object('id', p.id, 'url', p.url)) AS photos FROM reviews AS r LEFT OUTER JOIN reviews_photos AS p ON r.id=p.review_id WHERE product_id = $1 AND reported=False GROUP BY r.id ORDER BY $2 LIMIT $3 OFFSET $4"
     // 1. select reviews of specified product_id
     // 2. left outer join the table of reviews of specified product_id with reviews_photos that matches the review_id
@@ -24,13 +24,10 @@ module.exports = {
     // 5. Select all the properties we want to return
     var queryString =
       "SELECT l.id, l.rating, l.summary, l.body, l.recommend, to_timestamp(l.date/1000) AS date, l.reviewer_name, l.helpfulness, k.photos FROM (SELECT t.id, coalesce(array_agg(t.photo) filter (where t.photo is not null), '{}') AS photos FROM (SELECT r.id, CASE WHEN p.id IS NULL THEN NULL ELSE json_build_object('id', p.id, 'url', p.url) END AS photo FROM (SELECT * FROM reviews AS r WHERE r.product_id = $1) AS r LEFT OUTER JOIN reviews_photos AS p ON r.id=p.review_id) AS t GROUP BY t.id) AS k JOIN reviews AS l ON k.id=l.id WHERE l.reported=False ORDER BY CASE WHEN $2 = 'date' THEN date ELSE helpfulness END DESC LIMIT $3 OFFSET $4";
-    db.query(queryString, fields, (err, res) => {
-      console.log(err);
-      callback(err, res);
-    });
+    return db.query(queryString, fields)
   },
 
-  getReviewsMeta: (params, callback) => {
+  getReviewsMeta: (params) => {
     var fields = [params.product_id]
     // 1. count ratings of reviews by product_id
     // 2. count recommended of reviews by product_id
@@ -51,38 +48,62 @@ module.exports = {
           FROM characteristic_reviews AS y RIGHT OUTER JOIN characteristics AS z ON y.characteristic_id = z.id WHERE z.product_id=$1 GROUP BY z.id, z.product_id, z.name)
         AS m GROUP BY m.product_id)
       AS b ON l.product_id=b.product_id`
-    db.query(queryString, fields, (err, res) => {
-      console.log(err);
-      callback(err, res);
-    });
+    return db.query(queryString, fields)
   },
 
   postReviews: (params, callback) => {
-    var fields = [params.product_id, params.rating, params.summary, params.body, params.recommend, params.name, params.email];
+    var fields = [params.product_id, params.rating, Date.now(), params.summary, params.body, params.recommend, false, params.name, params.email, 'null', 0];
     var photos = params.photos;
     var characteristics = params.characteristics;
-    var queryString = `INSERT INTO reviews (product_id, rating, summary, body, recommend, reviewer_name, reviewer_email) VALUES($1, $2, $3, $4, $5, $6, $7)`
+    var queryString = `INSERT INTO reviews (product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
     db.query(queryString, fields, (err, res) => {
       console.log(err);
-      callback(err, res);
+      if (err) {
+        callback(err);
+      } else {
+        var review_id = res.rows[0].id;
+        var values = [];
+        charIdArr = Object.keys(characteristics);
+        for (var i = 0; i < Object.keys(characteristics).length; i++) {
+          values.push([charIdArr[i], review_id, characteristics[charIdArr[i]]]);
+        }
+        db.query(format('INSERT INTO characteristic_reviews (characteristic_id, review_id, value) VALUES %L', values), [], (err, res) => {
+          if (err) {
+            console.log(err);
+            callback(err);
+          } else {
+            console.log('inserted into characteristics_reviews, inserting into photos next')
+            if (photos.length === 0) {
+              callback(err, res);
+            } else {
+              var values = [];
+              for (var i = 0; i < photos.length; i++) {
+                values.push([review_id, photos[i]]);
+              }
+              db.query(format('INSERT INTO reviews_photos (review_id, url) VALUES %L', values), [], (err, res) => {
+                if (err) {
+                  console.log(err);
+                  callback(err);
+                } else {
+                  callback(err, res);
+                }
+              })
+            }
+          }
+        })
+      }
     });
   },
 
-  updateHelpful: (params, callback) => {
+  updateHelpful: (params) => {
     var fields = [params.review_id];
     var queryString = `UPDATE reviews SET helpfulness = helpfulness+1 WHERE id=$1`
-    db.query(queryString, fields, (err, res) => {
-      console.log(err);
-      callback(err, res);
-    });
+    return db.query(queryString, fields);
   },
 
-  updateReport: (params, callback) => {
+  updateReport: (params) => {
     var fields = [params.review_id];
     queryString = `UPDATE reviews SET reported = true WHERE id=$1;`
-    db.query(queryString, fields, (err, res) => {
-      console.log(err);
-      callback(err, res);
-    })
+    return db.query(queryString, fields)
   }
 };

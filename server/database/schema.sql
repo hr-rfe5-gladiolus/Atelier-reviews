@@ -23,12 +23,16 @@ CREATE TABLE reviews (
   response varchar(200),
   helpfulness int
 );
+CREATE INDEX reviews_id_index ON reviews(id DESC);
+CREATE INDEX reviews_product_id_index ON reviews(product_id DESC);
 
 CREATE TABLE characteristics (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
   product_id INT NOT NULL,
   name varchar(20)
 );
+CREATE INDEX characteristics_product_id_index ON characteristics(product_id DESC);
+
 
 CREATE TABLE characteristic_reviews (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
@@ -64,4 +68,7 @@ DELIMITER ','
 CSV HEADER;
 
 
-setval('reviews_id_seq', (SELECT MAX(id) FROM reviews)+1);
+SELECT setval('reviews_id_seq', (SELECT MAX(id) FROM reviews));
+SELECT setval('reviews_photos_id_seq', (SELECT MAX(id) FROM reviews_photos));
+SELECT setval('characteristic_reviews_id_seq', (SELECT MAX(id) FROM characteristic_reviews));
+SELECT setval('characteristics_id_seq', (SELECT MAX(id) FROM characteristics));
