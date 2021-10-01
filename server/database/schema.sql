@@ -23,23 +23,27 @@ CREATE TABLE reviews (
   response varchar(200),
   helpfulness int
 );
-
-CREATE TABLE characteristic_reviews (
-  id SERIAL NOT NULL UNIQUE PRIMARY KEY,
-  characteristic_id INT NOT NULL,
-  review_id INT NOT NULL,
-  value INT NOT NULL
-);
+CREATE INDEX reviews_id_index ON reviews(id DESC);
+CREATE INDEX reviews_product_id_index ON reviews(product_id DESC);
 
 CREATE TABLE characteristics (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
   product_id INT NOT NULL,
   name varchar(20)
 );
+CREATE INDEX characteristics_product_id_index ON characteristics(product_id DESC);
+
+
+CREATE TABLE characteristic_reviews (
+  id SERIAL NOT NULL UNIQUE PRIMARY KEY,
+  characteristic_id INT NOT NULL REFERENCES characteristics (id),
+  review_id INT NOT NULL REFERENCES reviews (id),
+  value INT NOT NULL
+);
 
 CREATE TABLE reviews_photos (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
-  review_id INT NOT NULL,
+  review_id INT NOT NULL REFERENCES reviews (id),
   url varchar(2048) NOT NULL
 );
 
@@ -48,14 +52,13 @@ FROM '/home/chris/hackreactor/SDC-reviews/reviews.csv'
 DELIMITER ','
 CSV HEADER;
 
-COPY characteristic_reviews(id, characteristic_id, review_id, value)
-FROM '/home/chris/hackreactor/SDC-reviews/characteristic_reviews.csv'
+COPY characteristics(id, product_id, name)
+FROM '/home/chris/hackreactor/SDC-reviews/characteristics.csv'
 DELIMITER ','
 CSV HEADER;
 
-
-COPY characteristics(id, product_id, name)
-FROM '/home/chris/hackreactor/SDC-reviews/characteristics.csv'
+COPY characteristic_reviews(id, characteristic_id, review_id, value)
+FROM '/home/chris/hackreactor/SDC-reviews/characteristic_reviews.csv'
 DELIMITER ','
 CSV HEADER;
 
@@ -63,3 +66,9 @@ COPY reviews_photos(id, review_id, url)
 FROM '/home/chris/hackreactor/SDC-reviews/reviews_photos.csv'
 DELIMITER ','
 CSV HEADER;
+
+
+SELECT setval('reviews_id_seq', (SELECT MAX(id) FROM reviews));
+SELECT setval('reviews_photos_id_seq', (SELECT MAX(id) FROM reviews_photos));
+SELECT setval('characteristic_reviews_id_seq', (SELECT MAX(id) FROM characteristic_reviews));
+SELECT setval('characteristics_id_seq', (SELECT MAX(id) FROM characteristics));
