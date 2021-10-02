@@ -27,6 +27,7 @@
     "nodemon": "^2.0.13",
     "pg": "^8.7.1",
     "pg-format": "^1.0.4",
-    "pg-promise": "^10.11.0"
+    "pg-promise": "^10.11.0",
+    "supertest": "^6.1.6"
   }
 }

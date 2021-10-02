@@ -56,42 +56,24 @@ module.exports = {
     var photos = params.photos;
     var characteristics = params.characteristics;
     var queryString = `INSERT INTO reviews (product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
-    db.query(queryString, fields, (err, res) => {
-      console.log(err);
-      if (err) {
-        callback(err);
-      } else {
-        var review_id = res.rows[0].id;
-        var values = [];
-        charIdArr = Object.keys(characteristics);
-        for (var i = 0; i < Object.keys(characteristics).length; i++) {
-          values.push([charIdArr[i], review_id, characteristics[charIdArr[i]]]);
-        }
-        db.query(format('INSERT INTO characteristic_reviews (characteristic_id, review_id, value) VALUES %L', values), [], (err, res) => {
-          if (err) {
-            console.log(err);
-            callback(err);
-          } else {
-            console.log('inserted into characteristics_reviews, inserting into photos next')
-            if (photos.length === 0) {
-              callback(err, res);
-            } else {
-              var values = [];
-              for (var i = 0; i < photos.length; i++) {
-                values.push([review_id, photos[i]]);
-              }
-              db.query(format('INSERT INTO reviews_photos (review_id, url) VALUES %L', values), [], (err, res) => {
-                if (err) {
-                  console.log(err);
-                  callback(err);
-                } else {
-                  callback(err, res);
-                }
-              })
-            }
-          }
-        })
+    return db.query(queryString, fields)
+    .then(data => {
+      var queries = [];
+      var review_id = data.rows[0].id;
+      var charValues = [];
+      charIdArr = Object.keys(characteristics);
+      for (var i = 0; i < Object.keys(characteristics).length; i++) {
+        charValues.push([charIdArr[i], review_id, characteristics[charIdArr[i]]]);
       }
+      queries.push(db.query(format('INSERT INTO characteristic_reviews (characteristic_id, review_id, value) VALUES %L', charValues)));
+      if (photos.length !== 0) {
+        var photoValues = [];
+        for (var i = 0; i < photos.length; i++) {
+          photoValues.push([review_id, photos[i]]);
+        }
+        queries.push(db.query(format('INSERT INTO reviews_photos (review_id, url) VALUES %L', photoValues)))
+      }
+      return Promise.all(queries)
     });
   },
 
