@@ -1,3 +1,5 @@
 *.csv*
 node_modules/
 package-lock.json
+db.sql
+*.txt
