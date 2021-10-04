@@ -23,7 +23,6 @@ CREATE TABLE reviews (
   response varchar(200),
   helpfulness int
 );
--- CREATE INDEX reviews_id_index ON reviews(id DESC);
 CREATE INDEX reviews_product_id_index ON reviews(product_id DESC);
 
 CREATE TABLE characteristics (
@@ -49,7 +48,6 @@ CREATE TABLE reviews_photos (
   review_id INT NOT NULL REFERENCES reviews (id),
   url varchar(2048) NOT NULL
 );
--- CREATE INDEX reviews_photos_id ON reviews_photos(id);
 CREATE INDEX reviews_photos_review_id ON reviews_photos(review_id);
 
 
