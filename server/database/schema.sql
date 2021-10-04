@@ -23,7 +23,6 @@ CREATE TABLE reviews (
   response varchar(200),
   helpfulness int
 );
-CREATE INDEX reviews_id_index ON reviews(id DESC);
 CREATE INDEX reviews_product_id_index ON reviews(product_id DESC);
 
 CREATE TABLE characteristics (
@@ -40,12 +39,17 @@ CREATE TABLE characteristic_reviews (
   review_id INT NOT NULL REFERENCES reviews (id),
   value INT NOT NULL
 );
+CREATE INDEX characteristic_reviews_review_id ON characteristic_reviews(review_id DESC);
+CREATE INDEX characteristic_reviews_characteristic_id ON characteristic_reviews(characteristic_id DESC);
+
 
 CREATE TABLE reviews_photos (
   id SERIAL NOT NULL UNIQUE PRIMARY KEY,
   review_id INT NOT NULL REFERENCES reviews (id),
   url varchar(2048) NOT NULL
 );
+CREATE INDEX reviews_photos_review_id ON reviews_photos(review_id);
+
 
 COPY reviews(id, product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, response, helpfulness)
 FROM '/home/chris/hackreactor/SDC-reviews/reviews.csv'
