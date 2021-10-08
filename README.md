@@ -17,7 +17,7 @@
 - node-postgres
 - PostgreSQL
 
-# Setting Up Repository on a Local Machine
+# Setting Up Repository on Local Machine
 - [ ] `npm install`
 - [ ] install postgres on your OS
 - [ ] create a super user role with login permission and a password
