@@ -1,4 +1,4 @@
-# SDC-reviews
+# Atelier-reviews
 > An API microservice that supports the ratings and reviews component of a large front-end e-commerce website.
 
 # Table of Contents
